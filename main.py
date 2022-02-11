@@ -7,6 +7,10 @@ from flask import (
     session,
     url_for
 )
+import sqlite3
+
+conn = sqlite3.connect('BDD.db')
+
 
 class User:
     def __init__(self, id, username, password):
@@ -18,9 +22,9 @@ class User:
         return f'<User: {self.username}>'
 
 users = []
-users.append(User(id=1, username='Anthony', password='password'))
-users.append(User(id=2, username='Becca', password='secret'))
-users.append(User(id=3, username='Carlos', password='somethingsimple'))
+users.append(User(id=1, username='RebeuDeter', password='DonutSucréAuSucre'))
+users.append(User(id=2, username='Miguel', password='secret'))
+users.append(User(id=3, username='Maxence', password='Réveille_toi'))
 
 
 app = Flask(__name__)
@@ -37,28 +41,43 @@ def before_request():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        session.pop('user_id', None)
+    error = None
 
-        username = request.form['username']
-        password = request.form['password']
-        
+    if request.method == "GET":
+        return render_template("login.html")
+
+    if request.method == "POST":
+        """verifier si l'utilisateur n'est pas deja utilise par un client"""
+
+        req_user_existant = "SELECT * FROM Donnees WHERE Identifiant = '%s' "
+        cursor.execute(req_user_existant % Identifiant)
+        resultat_req_user_existant = cursor.fetchall()
+        print(resultat_req_user_existant)
+
+        '''Si on a déjà un utilisateur avec ce numéro, on dit qu'il est déjà utilisé'''
+
         user = [x for x in users if x.username == username][0]
         if user and user.password == password:
             session['user_id'] = user.id
-            return redirect(url_for('profil'))
+            return redirect(url_for('profile'))
 
-        return redirect(url_for('profil'))
+        return redirect(url_for('login'))
 
-    return render_template('connexion.html')
+        return render_template('login.html')
 
+
+
+        #"""Sinon on enregistre les informations de l'identifiant dans la BD"""
+
+    else:
+        req_login = "INSERT INTO Donnees (User, Identifiant, Mot de passe)VALUES(%s,%s,%s)"
+        cursor.execute (req_login, (User, Identifiant, password))
+        connection.commit()
+    
 @app.route('/profile')
 def profile():
     if not g.user:
-        return redirect(url_for('profile'))
+        return redirect(url_for('login'))
 
-    return render_template('profil.html')
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=1665, debug=True)
+    return render_template('profile.html')
 
